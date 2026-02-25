@@ -7,6 +7,7 @@ interface DailyBreakdownChartProps {
   selectedDate: Date;
   onPrevDay: () => void;
   onNextDay: () => void;
+  onJumpToToday: () => void;
 }
 
 // Simple seeded random function
@@ -15,7 +16,7 @@ function seededRandom(seed: number) {
     return x - Math.floor(x);
 }
 
-export function DailyBreakdownChart({ selectedDate, onPrevDay, onNextDay }: DailyBreakdownChartProps) {
+export function DailyBreakdownChart({ selectedDate, onPrevDay, onNextDay, onJumpToToday }: DailyBreakdownChartProps) {
   const { theme } = useTheme();
   
   // Check if selected date is today
@@ -132,6 +133,13 @@ export function DailyBreakdownChart({ selectedDate, onPrevDay, onNextDay }: Dail
         
         <div className="flex items-center space-x-1">
              <button
+                onClick={onJumpToToday}
+                className="p-1.5 hover:bg-slate-100/50 dark:hover:bg-slate-700/50 rounded-md transition-all text-blue-600 dark:text-blue-400 flex items-center space-x-1 mr-1 bg-slate-50/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                title="Jump to Today"
+            >
+                <span className="text-xs font-semibold px-1">Today</span>
+            </button>
+            <button
                 onClick={onPrevDay}
                 className="p-1.5 hover:bg-slate-100/50 dark:hover:bg-slate-700/50 rounded-md transition-all text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 border border-transparent hover:border-slate-200 dark:hover:border-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
                 aria-label="Previous day"

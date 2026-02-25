@@ -30,6 +30,7 @@ export function ForecastingSection({
         selectedDate={selectedDate} 
         onPrevDay={onPrevDay}
         onNextDay={onNextDay}
+        onJumpToToday={onJumpToToday}
       />
       <DemandForecastChart 
         weekStart={weekStart} 

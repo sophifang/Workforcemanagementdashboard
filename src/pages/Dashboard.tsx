@@ -23,6 +23,35 @@ function getVolumeForDate(date: Date) {
     return estimatedHourly;
 }
 
+// Generate daily breakdown data (48 half-hour slots)
+function getDailyBreakdownData(date: Date) {
+    const points = [];
+    const seedBase = date.getFullYear() * 10000 + (date.getMonth() + 1) * 100 + date.getDate();
+    
+    for (let i = 0; i < 48; i++) {
+      const hour = Math.floor(i / 2);
+      const minute = (i % 2) * 30;
+      const timeLabel = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+      
+      // Create a nice curve matching DailyBreakdownChart logic
+      const x = i;
+      const base = 20;
+      const peak1 = 100 * Math.exp(-Math.pow(x - 20, 2) / 50);
+      const peak2 = 80 * Math.exp(-Math.pow(x - 30, 2) / 50);
+      
+      const randomVal = seededRandom(seedBase + i * 13); 
+      const noise = randomVal * 15;
+      
+      const volume = Math.floor(base + peak1 + peak2 + noise);
+
+      points.push({
+        time: timeLabel,
+        calls: Math.max(0, volume)
+      });
+    }
+    return points;
+}
+
 export default function Dashboard() {
   const [selectedDayVolume, setSelectedDayVolume] = useState<number | undefined>(undefined);
 
@@ -119,6 +148,9 @@ export default function Dashboard() {
       handleJumpToToday();
   };
 
+  // Generate daily breakdown data for selected day
+  const dailyBreakdownData = getDailyBreakdownData(selectedDay);
+
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900 font-sans text-slate-900 dark:text-slate-100 relative transition-colors duration-300">
       <div className="transition-all duration-300 relative z-10">
@@ -184,6 +216,8 @@ export default function Dashboard() {
               <SimulationPanel 
                 initialCallVolume={selectedDayVolume} 
                 onReset={handleReset}
+                selectedDate={selectedDay}
+                dailyBreakdownData={dailyBreakdownData}
               />
             </div>
           </div>

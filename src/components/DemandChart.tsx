@@ -98,31 +98,26 @@ export function DemandForecastChart({ weekStart, onPrevWeek, onNextWeek, selecte
         <div className="flex items-center space-x-2">
             <button
                 onClick={onJumpToToday}
-                className="p-1.5 hover:bg-slate-100/50 dark:hover:bg-slate-700/50 rounded-md transition-all text-blue-600 dark:text-blue-400 flex items-center space-x-1 mr-2 bg-slate-50/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                className="p-1.5 hover:bg-slate-100/50 dark:hover:bg-slate-700/50 rounded-md transition-all text-blue-600 dark:text-blue-400 flex items-center space-x-1 mr-1 bg-slate-50/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
                 title="Jump to Today"
             >
                 <span className="text-xs font-semibold px-1">Today</span>
             </button>
 
-            <div className="flex items-center space-x-2 bg-slate-50/50 dark:bg-slate-800/50 p-1 rounded-lg border border-slate-200 dark:border-slate-700">
             <button
                 onClick={onPrevWeek}
-                className="p-1.5 hover:bg-white dark:hover:bg-slate-700 hover:shadow-sm rounded-md transition-all text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                className="p-1.5 hover:bg-slate-100/50 dark:hover:bg-slate-700/50 rounded-md transition-all text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 border border-transparent hover:border-slate-200 dark:hover:border-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
                 aria-label="Previous week"
             >
                 <ChevronLeft className="w-4 h-4" />
             </button>
-            <span className="text-xs font-semibold px-2 text-slate-600 dark:text-slate-400 select-none">
-                Weekly View
-            </span>
             <button
                 onClick={onNextWeek}
-                className="p-1.5 hover:bg-white dark:hover:bg-slate-700 hover:shadow-sm rounded-md transition-all text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                className="p-1.5 hover:bg-slate-100/50 dark:hover:bg-slate-700/50 rounded-md transition-all text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 border border-transparent hover:border-slate-200 dark:hover:border-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
                 aria-label="Next week"
             >
                 <ChevronRight className="w-4 h-4" />
             </button>
-            </div>
         </div>
       </div>
       
