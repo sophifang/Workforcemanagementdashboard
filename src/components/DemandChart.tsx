@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, ReferenceArea } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, ReferenceArea, Legend } from 'recharts';
 import { ChevronLeft, ChevronRight, Calendar, RotateCcw } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 
@@ -41,6 +41,8 @@ export function DemandForecastChart({ weekStart, onPrevWeek, onNextWeek, selecte
       const noise = randomVal * 2000 - 1000;
       
       const isToday = day.getTime() === today.getTime();
+      const isPast = day.getTime() < today.getTime();
+      const isFuture = day.getTime() > today.getTime();
       const isSelected = day.getTime() === new Date(selectedDate.setHours(0,0,0,0)).getTime();
       const mm = day.getMonth() + 1;
       const dd = day.getDate();
@@ -53,6 +55,8 @@ export function DemandForecastChart({ weekStart, onPrevWeek, onNextWeek, selecte
         fullName: day.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' }),
         calls: Math.max(4000, Math.floor(baseVolume + noise)),
         isToday: isToday,
+        isPast: isPast,
+        isFuture: isFuture,
         isSelected: isSelected
       });
     }
@@ -70,7 +74,7 @@ export function DemandForecastChart({ weekStart, onPrevWeek, onNextWeek, selecte
   const todayEntry = currentData.find(d => d.isToday);
 
   return (
-    <div className="flex flex-col h-full min-h-0">
+    <div className="flex flex-col h-full min-h-[300px]">
       <style>{`
         .recharts-wrapper {
           outline: none !important;
@@ -115,8 +119,8 @@ export function DemandForecastChart({ weekStart, onPrevWeek, onNextWeek, selecte
         </div>
       </div>
       
-      <div style={{ width: '100%', height: 'calc(100% - 60px)' }}>
-          <ResponsiveContainer width="100%" height="100%">
+      <div style={{ width: '100%', height: 'calc(100% - 60px)', minHeight: '300px' }}>
+          <ResponsiveContainer width="100%" height="100%" minHeight={300}>
             <BarChart
               data={currentData}
               margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
@@ -189,6 +193,7 @@ export function DemandForecastChart({ weekStart, onPrevWeek, onNextWeek, selecte
                             <div className="flex items-center gap-2 mb-1">
                                 <p className={`text-xs font-medium ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>{data.fullName}</p>
                                 {data.isToday && <span className="text-[10px] leading-none bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 px-1.5 py-0.5 rounded font-medium">Today</span>}
+                                {data.isFuture && <span className="text-[10px] leading-none bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 px-1.5 py-0.5 rounded font-medium">Forecast</span>}
                             </div>
                             <p className={`text-lg font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
                                 {Number(payload[0].value).toLocaleString()} <span className="text-xs font-normal text-slate-500 dark:text-slate-400">calls</span>
@@ -208,18 +213,61 @@ export function DemandForecastChart({ weekStart, onPrevWeek, onNextWeek, selecte
                       ifOverflow="visible"
                   />
               )}
+              <Legend 
+                wrapperStyle={{ paddingTop: '10px' }}
+                content={() => (
+                  <div className="flex items-center justify-center gap-6 text-sm">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded" style={{ backgroundColor: '#94a3b8', opacity: 0.6 }}></div>
+                      <span className="text-slate-600 dark:text-slate-400">Observed (Past)</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded" style={{ backgroundColor: '#3b82f6', opacity: 0.6 }}></div>
+                      <span className="text-slate-600 dark:text-slate-400">Demand Forecast (Future)</span>
+                    </div>
+                  </div>
+                )}
+              />
               <Bar 
                 dataKey="calls" 
                 radius={[4, 4, 0, 0]}
                 maxBarSize={60}
               >
-                {currentData.map((entry, index) => (
+                {currentData.map((entry, index) => {
+                  let fillColor;
+                  let opacity;
+                  
+                  if (entry.isSelected) {
+                    // Selected date gets highlighted
+                    if (entry.isFuture) {
+                      fillColor = "#3b82f6"; // Blue for future demand
+                      opacity = 1;
+                    } else if (entry.isToday) {
+                      fillColor = theme === 'dark' ? "#3B82F6" : "#60A5FA"; // Blue for today
+                      opacity = 1;
+                    } else {
+                      fillColor = "#64748b"; // Slate for past
+                      opacity = 1;
+                    }
+                  } else if (entry.isToday) {
+                    fillColor = theme === 'dark' ? "#3B82F6" : "#BFDBFE";
+                    opacity = 0.9;
+                  } else if (entry.isFuture) {
+                    fillColor = "#3b82f6"; // Blue for future demand forecast
+                    opacity = 0.6;
+                  } else {
+                    fillColor = "#94a3b8"; // Grey for past/observed
+                    opacity = 0.6;
+                  }
+                  
+                  return (
                     <Cell 
-                        key={`cell-${index}`} 
-                        fill={entry.isSelected ? "#2563EB" : entry.isToday ? (theme === 'dark' ? "#3B82F6" : "#BFDBFE") : "#0077C5"} 
-                        opacity={entry.isSelected ? 1 : entry.isToday ? 0.9 : 0.6}
+                      key={`cell-${index}`} 
+                      fill={fillColor}
+                      opacity={opacity}
                     />
-                ))}
+                  );
+                })}
               </Bar>
             </BarChart>
           </ResponsiveContainer>

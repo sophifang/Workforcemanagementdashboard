@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { MetricCard } from '../components/MetricCard';
 import { WorkforceManagementPanel } from '../components/WorkforceManagementPanel';
 import { DemandForecastChart } from '../components/DemandChart';
-import { Clock, Target, TrendingUp, Trophy, ArrowRight, Phone, Calendar } from 'lucide-react';
+import { Clock, Target, TrendingUp, Trophy, ArrowRight, Phone, Calendar, CalendarClock } from 'lucide-react';
 import { Link } from 'react-router';
 import { ThemeToggle } from '../components/ThemeToggle';
 
@@ -284,9 +284,9 @@ export default function Dashboard() {
           const slaRate = 0.88 + seededRandom(slaSeed) * 0.10; // 88-98%
           wtdServicedCalls += calls * slaRate;
           
-          // Simulate wait times (25-40s range)
+          // Simulate wait times (25-90s range to handle higher values)
           const waitSeed = day.getTime() + i * 200;
-          const waitTime = 25 + seededRandom(waitSeed) * 15;
+          const waitTime = 25 + seededRandom(waitSeed) * 65;
           wtdWaitTimeSum += waitTime;
           
           // Simulate occupancy (80-90% range)
@@ -329,7 +329,7 @@ export default function Dashboard() {
           prevWtdServicedCalls += calls * slaRate;
           
           const waitSeed = day.getTime() + i * 200;
-          const waitTime = 25 + seededRandom(waitSeed) * 15;
+          const waitTime = 25 + seededRandom(waitSeed) * 65;
           prevWtdWaitTimeSum += waitTime;
           
           const occupancySeed = day.getTime() + i * 300;
@@ -399,7 +399,7 @@ export default function Dashboard() {
     const slaBase = 92 + (seededRandom(weekSeed) * 6); // 92-98%
     const sla = Math.min(98, Math.max(88, slaBase)).toFixed(1);
     
-    const waitBase = 35 + (seededRandom(weekSeed + 1) * 25); // 35-60s
+    const waitBase = 35 + (seededRandom(weekSeed + 1) * 55); // 35-90s
     const waitTime = Math.round(waitBase);
     
     const occupancyBase = 82 + (seededRandom(weekSeed + 2) * 10); // 82-92%
@@ -409,7 +409,7 @@ export default function Dashboard() {
     const prevSla = 92 + (seededRandom(weekSeed - 604800000) * 6);
     const slaChange = (slaBase - prevSla).toFixed(1);
     
-    const prevWait = 35 + (seededRandom(weekSeed + 1 - 604800000) * 25);
+    const prevWait = 35 + (seededRandom(weekSeed + 1 - 604800000) * 55);
     const waitChange = Math.round(waitBase - prevWait);
     
     const prevOccupancy = 82 + (seededRandom(weekSeed + 2 - 604800000) * 10);
@@ -490,7 +490,14 @@ export default function Dashboard() {
               <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Intuit Call Center Dashboard</h1>
               <p className="text-slate-500 dark:text-slate-400 mt-1">Real-time insights and workforce performance metrics.</p>
             </div>
-            <div className="flex items-center -mt-1">
+            <div className="flex items-center space-x-3 -mt-1">
+                <Link 
+                  to="/shift-scheduler"
+                  className="flex items-center space-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors shadow-sm"
+                >
+                  <CalendarClock className="w-4 h-4" />
+                  <span className="text-sm font-medium">Shift Scheduler</span>
+                </Link>
                 <ThemeToggle />
             </div>
           </div>
@@ -625,6 +632,10 @@ export default function Dashboard() {
                   </div>
                   <h2 className="text-lg font-bold text-slate-900 dark:text-white">Top Performing Agents</h2>
                 </div>
+                <Link to="/all-agents" className="text-sm font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 flex items-center space-x-1 whitespace-nowrap">
+                  <span>View All</span>
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
              </div>
              <div className="overflow-x-auto">
                 <table className="w-full text-left text-sm">
@@ -635,18 +646,35 @@ export default function Dashboard() {
                       <th className="px-6 py-4">Calls Taken</th>
                       <th className="px-6 py-4">Average Handle Time</th>
                       <th className="px-6 py-4">Utilization Rate</th>
-                      <th className="px-6 py-4">Service Level (SLA)</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100/50 dark:divide-slate-700/50">
                     {[
-                      { name: 'Jackie Wang', status: 'Online', calls: 45, aht: '3m 12s', utilization: '87%', sla: '98%' },
-                      { name: 'Sarah He', status: 'In Call', calls: 38, aht: '2m 55s', utilization: '84%', sla: '96%' },
-                      { name: 'Hao Zhang', status: 'Break', calls: 41, aht: '3m 05s', utilization: '86%', sla: '94%' },
-                      { name: 'Sophia Fang', status: 'Online', calls: 32, aht: '3m 40s', utilization: '82%', sla: '97%' },
+                      { name: 'Jackie Wang', status: 'Online', calls: 45, aht: '3m 12s', utilization: '87%' },
+                      { name: 'Sarah He', status: 'In Call', calls: 38, aht: '2m 55s', utilization: '84%' },
+                      { name: 'Hao Zhang', status: 'Break', calls: 41, aht: '3m 05s', utilization: '86%' },
+                      { name: 'Sophia Fang', status: 'Online', calls: 32, aht: '3m 40s', utilization: '82%' },
+                      { name: 'Michael Chen', status: 'In Call', calls: 43, aht: '2m 48s', utilization: '89%' },
+                      { name: 'Lisa Park', status: 'Online', calls: 39, aht: '3m 20s', utilization: '85%' },
+                      { name: 'David Liu', status: 'Break', calls: 36, aht: '3m 15s', utilization: '83%' },
+                      { name: 'Emily Zhang', status: 'Online', calls: 44, aht: '2m 52s', utilization: '88%' },
+                      { name: 'Ryan Kim', status: 'In Call', calls: 40, aht: '3m 08s', utilization: '86%' },
+                      { name: 'Jessica Wu', status: 'Online', calls: 37, aht: '3m 25s', utilization: '84%' },
+                      { name: 'Kevin Zhao', status: 'Break', calls: 35, aht: '3m 18s', utilization: '81%' },
+                      { name: 'Amy Lin', status: 'Online', calls: 42, aht: '2m 58s', utilization: '87%' },
+                      { name: 'Tom Martinez', status: 'In Call', calls: 38, aht: '3m 10s', utilization: '85%' },
+                      { name: 'Rachel Chang', status: 'Online', calls: 41, aht: '3m 02s', utilization: '86%' },
+                      { name: 'James Lee', status: 'Break', calls: 34, aht: '3m 28s', utilization: '80%' },
                     ].map((agent, idx) => (
-                      <tr key={idx} className="hover:bg-slate-50/50 dark:hover:bg-slate-700/30 transition-colors">
-                        <td className="px-6 py-4 font-medium text-slate-900 dark:text-white">{agent.name}</td>
+                      <tr key={idx} className="hover:bg-slate-50/50 dark:hover:bg-slate-700/30 transition-colors cursor-pointer">
+                        <td className="px-6 py-4">
+                          <Link 
+                            to={`/agent/${encodeURIComponent(agent.name)}`}
+                            className="font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline"
+                          >
+                            {agent.name}
+                          </Link>
+                        </td>
                         <td className="px-6 py-4">
                           <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                             agent.status === 'Online' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400' :
@@ -659,7 +687,6 @@ export default function Dashboard() {
                         <td className="px-6 py-4 text-slate-600 dark:text-slate-400">{agent.calls}</td>
                         <td className="px-6 py-4 text-slate-600 dark:text-slate-400">{agent.aht}</td>
                         <td className="px-6 py-4 text-slate-600 dark:text-slate-400">{agent.utilization}</td>
-                        <td className="px-6 py-4 text-slate-900 dark:text-white font-bold">{agent.sla}</td>
                       </tr>
                     ))}
                   </tbody>
