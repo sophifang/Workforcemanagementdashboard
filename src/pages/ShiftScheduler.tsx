@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { ArrowLeft, Calendar, Users, Clock, AlertCircle, CheckCircle, User, ChevronLeft, ChevronRight, Lock, Save, Target, Activity, X, Plus, Minus } from 'lucide-react';
 import { Link } from 'react-router';
 import { useTheme } from '../context/ThemeContext';
@@ -29,6 +29,11 @@ function seededRandom(seed: number) {
 export default function ShiftScheduler() {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
   
   const [selectedWeekOffset, setSelectedWeekOffset] = useState(0);
   
@@ -1148,8 +1153,9 @@ export default function ShiftScheduler() {
                   </div>
                 </div>
               </div>
-              <div className="h-48">
-                <ResponsiveContainer width="100%" height="100%">
+              <div style={{ height: '192px', minHeight: '192px', minWidth: '300px' }}>
+                {isMounted ? (
+                <ResponsiveContainer width="100%" height="100%" minHeight={192} minWidth={300}>
                   <BarChart data={requiredStaffing.filter((_, idx) => idx % 2 === 0).map(slot => ({
                     ...slot,
                     gap: slot.scheduled < slot.required ? slot.required - slot.scheduled : 0,
@@ -1196,6 +1202,11 @@ export default function ShiftScheduler() {
                     <Bar dataKey="excess" stackId="a" fill="#3b82f6" name="excess" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
+                ) : (
+                  <div className="flex items-center justify-center h-full text-slate-400">
+                    Loading chart...
+                  </div>
+                )}
               </div>
             </div>
             </div>

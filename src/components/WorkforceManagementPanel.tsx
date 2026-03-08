@@ -90,7 +90,7 @@ export function WorkforceManagementPanel({
 
         {/* Charts below */}
         <div className="space-y-6">
-          <div className="min-h-[400px]">
+          <div className="h-[400px] min-h-[400px]">
             <DailyBreakdownChart 
               selectedDate={selectedDate} 
               onPrevDay={onPrevDay}

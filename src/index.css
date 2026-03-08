@@ -688,10 +688,6 @@
     height: calc(var(--spacing) * 24);
   }
 
-  .h-48 {
-    height: calc(var(--spacing) * 48);
-  }
-
   .h-\[80vh\] {
     height: 80vh;
   }
@@ -720,12 +716,16 @@
     max-height: 600px;
   }
 
-  .min-h-\[300px\] {
-    min-height: 300px;
+  .min-h-\[360px\] {
+    min-height: 360px;
   }
 
   .min-h-\[400px\] {
     min-height: 400px;
+  }
+
+  .min-h-\[450px\] {
+    min-height: 450px;
   }
 
   .min-h-screen {

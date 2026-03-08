@@ -321,7 +321,7 @@ export default function AgentDetail() {
                 </span>
               </div>
             </div>
-            <ResponsiveContainer width="100%" height={250}>
+            <ResponsiveContainer width="100%" height={250} minWidth={300} minHeight={250}>
               <LineChart data={performanceTrend}>
                 <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#334155' : '#e2e8f0'} />
                 <XAxis dataKey="date" stroke={isDark ? '#94a3b8' : '#64748b'} style={{ fontSize: '12px' }} />
@@ -355,7 +355,7 @@ export default function AgentDetail() {
                 </span>
               </div>
             </div>
-            <ResponsiveContainer width="100%" height={250}>
+            <ResponsiveContainer width="100%" height={250} minWidth={300} minHeight={250}>
               <BarChart data={performanceTrend}>
                 <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#334155' : '#e2e8f0'} />
                 <XAxis dataKey="date" stroke={isDark ? '#94a3b8' : '#64748b'} style={{ fontSize: '12px' }} />

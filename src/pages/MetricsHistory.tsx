@@ -306,9 +306,8 @@ export default function MetricsHistory() {
                             const weekTotalCalls = group.days.reduce((sum, day) => sum + day.calls, 0);
                             
                             return (
-                            <>
+                            <React.Fragment key={`week-${group.weekStart.getTime()}`}>
                                 <tr 
-                                    key={`week-${group.weekStart.getTime()}`}
                                     className="hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors cursor-pointer bg-slate-50/50 dark:bg-slate-800/50"
                                     onClick={() => toggleWeek(group.weekStart)}
                                 >
@@ -376,7 +375,7 @@ export default function MetricsHistory() {
                                         </td>
                                     </tr>
                                 )}
-                            </>
+                            </React.Fragment>
                         )})}
                         {historyData.length > 500 && (
                             <tr>

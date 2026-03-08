@@ -26,7 +26,7 @@ export function ForecastingSection({
   
   return (
     <div className="flex flex-col gap-6">
-      <div className="min-h-[500px]">
+      <div className="h-[500px] min-h-[500px]">
         <DailyBreakdownChart 
           selectedDate={selectedDate} 
           onPrevDay={onPrevDay}
@@ -34,14 +34,16 @@ export function ForecastingSection({
           onJumpToToday={onJumpToToday}
         />
       </div>
-      <DemandForecastChart 
-        weekStart={weekStart} 
-        onPrevWeek={onPrevWeek} 
-        onNextWeek={onNextWeek} 
-        selectedDate={selectedDate}
-        onSelectDate={onSelectDate}
-        onJumpToToday={onJumpToToday}
-      />
+      <div className="h-[400px] min-h-[400px]">
+        <DemandForecastChart 
+          weekStart={weekStart} 
+          onPrevWeek={onPrevWeek} 
+          onNextWeek={onNextWeek} 
+          selectedDate={selectedDate}
+          onSelectDate={onSelectDate}
+          onJumpToToday={onJumpToToday}
+        />
+      </div>
     </div>
   );
 }

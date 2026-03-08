@@ -22,6 +22,11 @@ interface DailyBreakdownChartProps {
 
 export function DailyBreakdownChart({ selectedDate, onPrevDay, onNextDay, onJumpToToday, staffingData, currentCallVolume, currentRequiredAgents, peakCallVolume, peakRequiredAgents, currentTimeSlot, isToday }: DailyBreakdownChartProps) {
   const { theme } = useTheme();
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
   
   // Check if selected date is today
   const isTodayMemo = useMemo(() => {
@@ -224,7 +229,7 @@ export function DailyBreakdownChart({ selectedDate, onPrevDay, onNextDay, onJump
   };
 
   return (
-    <div className="flex flex-col min-w-0 min-h-[400px]">
+    <div className="flex flex-col min-w-0 min-h-[450px]">
       <style>{`
         .recharts-wrapper {
           outline: none !important;
@@ -335,8 +340,9 @@ export function DailyBreakdownChart({ selectedDate, onPrevDay, onNextDay, onJump
       )}
 
       {/* Chart */}
-      <div className="w-full" style={{ height: '350px', minHeight: '350px' }}>
-        <ResponsiveContainer width="100%" height="100%" minHeight={350}>
+      <div className="w-full" style={{ height: '350px', minHeight: '350px', minWidth: '300px' }}>
+        {isMounted ? (
+        <ResponsiveContainer width="100%" height="100%" minHeight={350} minWidth={300}>
           <ComposedChart 
             data={enhancedStaffingData} 
             margin={{ top: 20, right: 30, left: 10, bottom: 0 }}
@@ -546,6 +552,11 @@ export function DailyBreakdownChart({ selectedDate, onPrevDay, onNextDay, onJump
             )}
           </ComposedChart>
         </ResponsiveContainer>
+        ) : (
+          <div className="flex items-center justify-center h-full text-slate-400">
+            Loading chart...
+          </div>
+        )}
       </div>
 
       {/* Agent Assignments */}

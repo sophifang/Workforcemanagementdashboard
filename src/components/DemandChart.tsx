@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, ReferenceArea, Legend } from 'recharts';
 import { ChevronLeft, ChevronRight, Calendar, RotateCcw } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
@@ -20,6 +20,11 @@ function seededRandom(seed: number) {
 
 export function DemandForecastChart({ weekStart, onPrevWeek, onNextWeek, selectedDate, onSelectDate, onJumpToToday }: DemandForecastChartProps) {
   const { theme } = useTheme();
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
   
   const currentData = useMemo(() => {
     const data = [];
@@ -74,7 +79,7 @@ export function DemandForecastChart({ weekStart, onPrevWeek, onNextWeek, selecte
   const todayEntry = currentData.find(d => d.isToday);
 
   return (
-    <div className="flex flex-col h-full min-h-[300px]">
+    <div className="flex flex-col min-h-[360px]">
       <style>{`
         .recharts-wrapper {
           outline: none !important;
@@ -119,8 +124,9 @@ export function DemandForecastChart({ weekStart, onPrevWeek, onNextWeek, selecte
         </div>
       </div>
       
-      <div style={{ width: '100%', height: 'calc(100% - 60px)', minHeight: '300px' }}>
-          <ResponsiveContainer width="100%" height="100%" minHeight={300}>
+      <div style={{ width: '100%', height: '300px', minHeight: '300px', minWidth: '300px' }}>
+        {isMounted ? (
+          <ResponsiveContainer width="100%" height="100%" minHeight={300} minWidth={300}>
             <BarChart
               data={currentData}
               margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
@@ -271,6 +277,11 @@ export function DemandForecastChart({ weekStart, onPrevWeek, onNextWeek, selecte
               </Bar>
             </BarChart>
           </ResponsiveContainer>
+        ) : (
+          <div className="flex items-center justify-center h-full text-slate-400">
+            Loading chart...
+          </div>
+        )}
       </div>
     </div>
   );
