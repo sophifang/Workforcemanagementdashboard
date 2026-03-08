@@ -92,12 +92,12 @@ export default function ShiftScheduler() {
     return dates;
   }, [selectedWeekOffset]);
 
-  // Check if selected date is in the past
+  // Check if selected date is in the past or today (can only edit until day before)
   const selectedDateIsPast = useMemo(() => {
     const selectedDate = weekDates[selectedDay];
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    return selectedDate < today;
+    return selectedDate <= today;
   }, [weekDates, selectedDay]);
 
   // Warn user before leaving page in edit mode
@@ -521,14 +521,84 @@ export default function ShiftScheduler() {
   const coverageStatus = useMemo(() => {
     const understaffed = requiredStaffing.filter(slot => slot.scheduled < slot.required).length;
     const adequate = requiredStaffing.filter(slot => slot.scheduled >= slot.required).length;
+    const overstaffed = requiredStaffing.filter(slot => slot.scheduled > slot.required).length;
     const totalSlots = requiredStaffing.length;
     const coveragePercent = totalSlots > 0 ? Math.round((adequate / totalSlots) * 100) : 0;
     
-    // Past dates should not show "needs attention"
-    const showWarning = !selectedDateIsPast && understaffed > 0;
+    const dateKey = weekDates[selectedDay].toISOString().split('T')[0];
+    const dayShifts = assignedShifts[dateKey] || {};
+    const hasScheduledAgents = Object.keys(dayShifts).length > 0;
     
-    return { understaffed, adequate, coveragePercent, showWarning };
-  }, [requiredStaffing, selectedDateIsPast]);
+    // Calculate deadline - schedules must be finalized by Friday 6pm EOD for the following week
+    const selectedDate = weekDates[selectedDay];
+    const monday = new Date(selectedDate);
+    const dayOfWeek = monday.getDay();
+    const diff = monday.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
+    monday.setDate(diff);
+    monday.setHours(0, 0, 0, 0);
+    
+    // Find the Friday before this week's Monday (at 6pm)
+    const deadlineFriday = new Date(monday);
+    deadlineFriday.setDate(deadlineFriday.getDate() - 3); // Go back to Friday
+    deadlineFriday.setHours(18, 0, 0, 0); // 6pm EOD
+    
+    const now = new Date();
+    const daysUntilDeadline = Math.ceil((deadlineFriday.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    const isPastDeadline = now > deadlineFriday && !completedDays.has(dateKey) && !selectedDateIsPast;
+    
+    // Determine status
+    let status = '';
+    let statusType: 'success' | 'warning' | 'error' | 'info' = 'info';
+    
+    if (selectedDateIsPast && completedDays.has(dateKey)) {
+      status = 'Locked';
+      statusType = 'info';
+    } else if (selectedDateIsPast && !completedDays.has(dateKey)) {
+      // Schedule was not completed before its start date
+      status = 'Locked - Incomplete';
+      statusType = 'info';
+    } else if (!hasScheduledAgents) {
+      status = 'Not Started';
+      statusType = 'warning';
+      if (daysUntilDeadline > 0 && daysUntilDeadline <= 7) {
+        status = `Not Started - Due in ${daysUntilDeadline}d`;
+      } else if (isPastDeadline) {
+        status = 'Not Started - Overdue';
+        statusType = 'error';
+      }
+    } else if (understaffed > adequate) {
+      status = 'Incomplete - Understaffed';
+      statusType = 'error';
+      if (daysUntilDeadline > 0 && daysUntilDeadline <= 7) {
+        status = `Incomplete - Understaffed (Due in ${daysUntilDeadline}d)`;
+      } else if (isPastDeadline) {
+        status = 'Incomplete - Understaffed (Overdue)';
+      }
+    } else if (overstaffed > totalSlots / 2) {
+      status = 'Overstaffed';
+      statusType = 'warning';
+    } else if (coveragePercent === 100) {
+      status = 'Fully Covered';
+      statusType = 'success';
+    } else {
+      status = 'Needs Attention';
+      statusType = 'warning';
+      if (daysUntilDeadline > 0 && daysUntilDeadline <= 7) {
+        status = `Needs Attention - Due in ${daysUntilDeadline}d`;
+      }
+    }
+    
+    return { 
+      understaffed, 
+      adequate, 
+      overstaffed,
+      coveragePercent, 
+      status,
+      statusType,
+      daysUntilDeadline,
+      isPastDeadline
+    };
+  }, [requiredStaffing, selectedDateIsPast, weekDates, selectedDay, assignedShifts, completedDays]);
 
   // Calculate occupancy and utilization metrics
   const staffingMetrics = useMemo(() => {
@@ -572,8 +642,31 @@ export default function ShiftScheduler() {
     };
   }, [requiredStaffing, assignedShifts, weekDates, selectedDay, availableAgents]);
 
-  const handlePrevWeek = () => setSelectedWeekOffset(prev => prev - 1);
-  const handleNextWeek = () => setSelectedWeekOffset(prev => prev + 1);
+  const handlePrevWeek = () => {
+    setSelectedWeekOffset(prev => {
+      const newOffset = prev - 1;
+      // If moving to current week, jump to today's date
+      if (newOffset === 0) {
+        setSelectedDay(getTodayDayIndex());
+      } else {
+        setSelectedDay(0); // Jump to Monday for other weeks
+      }
+      return newOffset;
+    });
+  };
+  
+  const handleNextWeek = () => {
+    setSelectedWeekOffset(prev => {
+      const newOffset = prev + 1;
+      // If moving to current week, jump to today's date
+      if (newOffset === 0) {
+        setSelectedDay(getTodayDayIndex());
+      } else {
+        setSelectedDay(0); // Jump to Monday for other weeks
+      }
+      return newOffset;
+    });
+  };
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900 font-sans text-slate-900 dark:text-slate-100 p-6 md:p-8 transition-colors duration-300">
@@ -633,7 +726,10 @@ export default function ShiftScheduler() {
                 <ChevronLeft className="w-5 h-5" />
               </button>
               <button
-                onClick={() => setSelectedWeekOffset(0)}
+                onClick={() => {
+                  setSelectedWeekOffset(0);
+                  setSelectedDay(getTodayDayIndex());
+                }}
                 className="px-4 py-2 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors text-sm font-medium"
               >
                 This Week
@@ -691,33 +787,34 @@ export default function ShiftScheduler() {
         </div>
 
         {/* Coverage Summary */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700 p-5">
+        <div className="grid grid-cols-5 gap-4">
+          <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700 p-5 flex flex-col">
             <div className="flex items-center space-x-2 mb-2">
               <Users className="w-4 h-4 text-blue-600 dark:text-blue-400" />
               <span className="text-sm font-medium text-slate-600 dark:text-slate-400">Available Agents</span>
             </div>
-            <p className="text-3xl font-bold text-slate-900 dark:text-white">{availableAgents.length}</p>
+            <p className="text-3xl font-bold text-slate-900 dark:text-white mt-auto">{availableAgents.length}</p>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{unavailableAgents.length} unavailable</p>
           </div>
 
-          <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700 p-5">
+          <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700 p-5 flex flex-col">
             <div className="flex items-center space-x-2 mb-2">
               <Clock className="w-4 h-4 text-purple-600 dark:text-purple-400" />
               <span className="text-sm font-medium text-slate-600 dark:text-slate-400">Time Slots Coverage</span>
             </div>
-            <p className="text-3xl font-bold text-slate-900 dark:text-white">{coverageStatus.coveragePercent}%</p>
+            <p className="text-3xl font-bold text-slate-900 dark:text-white mt-auto">{coverageStatus.coveragePercent}%</p>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-              {coverageStatus.adequate} adequate, {coverageStatus.understaffed} understaffed
+              {coverageStatus.adequate > 0 && `${coverageStatus.adequate} adequate${coverageStatus.understaffed > 0 ? ', ' : ''}`}
+              {coverageStatus.understaffed > 0 && `${coverageStatus.understaffed} understaffed`}
             </p>
           </div>
 
-          <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700 p-5">
+          <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700 p-5 flex flex-col">
             <div className="flex items-center space-x-2 mb-2">
               <Target className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
               <span className="text-sm font-medium text-slate-600 dark:text-slate-400">Agent Occupancy</span>
             </div>
-            <p className={`text-3xl font-bold ${
+            <p className={`text-3xl font-bold mt-auto ${
               staffingMetrics.occupancyStatus === 'low' ? 'text-yellow-600 dark:text-yellow-400' :
               staffingMetrics.occupancyStatus === 'high' ? 'text-red-600 dark:text-red-400' :
               'text-green-600 dark:text-green-400'
@@ -729,12 +826,12 @@ export default function ShiftScheduler() {
             </p>
           </div>
 
-          <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700 p-5">
+          <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700 p-5 flex flex-col">
             <div className="flex items-center space-x-2 mb-2">
               <Activity className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
               <span className="text-sm font-medium text-slate-600 dark:text-slate-400">Staff Utilization</span>
             </div>
-            <p className={`text-3xl font-bold ${
+            <p className={`text-3xl font-bold mt-auto ${
               staffingMetrics.utilizationStatus === 'low' ? 'text-yellow-600 dark:text-yellow-400' :
               staffingMetrics.utilizationStatus === 'high' ? 'text-red-600 dark:text-red-400' :
               'text-green-600 dark:text-green-400'
@@ -746,39 +843,47 @@ export default function ShiftScheduler() {
             </p>
           </div>
 
-          <div className={`rounded-xl shadow-sm border p-5 ${
-            coverageStatus.showWarning 
+          <div className={`rounded-xl shadow-sm border p-5 flex flex-col ${
+            coverageStatus.statusType === 'error'
+              ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-700'
+              : coverageStatus.statusType === 'warning' 
               ? 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-700' 
-              : isDayLocked
+              : coverageStatus.statusType === 'info'
               ? 'bg-slate-100 dark:bg-slate-800 border-slate-300 dark:border-slate-600'
               : 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-700'
           }`}>
             <div className="flex items-center space-x-2 mb-2">
-              {coverageStatus.showWarning ? (
+              {coverageStatus.statusType === 'error' ? (
+                <AlertCircle className="w-4 h-4 text-red-600 dark:text-red-400" />
+              ) : coverageStatus.statusType === 'warning' ? (
                 <AlertCircle className="w-4 h-4 text-yellow-600 dark:text-yellow-400" />
-              ) : isDayLocked ? (
+              ) : coverageStatus.statusType === 'info' ? (
                 <Lock className="w-4 h-4 text-slate-600 dark:text-slate-400" />
               ) : (
                 <CheckCircle className="w-4 h-4 text-green-600 dark:text-green-400" />
               )}
               <span className={`text-sm font-medium ${
-                coverageStatus.showWarning 
+                coverageStatus.statusType === 'error'
+                  ? 'text-red-700 dark:text-red-300'
+                  : coverageStatus.statusType === 'warning' 
                   ? 'text-yellow-700 dark:text-yellow-300' 
-                  : isDayLocked
+                  : coverageStatus.statusType === 'info'
                   ? 'text-slate-700 dark:text-slate-300'
                   : 'text-green-700 dark:text-green-300'
               }`}>
                 Schedule Status
               </span>
             </div>
-            <p className={`text-3xl font-bold ${
-              coverageStatus.showWarning 
+            <p className={`text-2xl font-bold mt-auto ${
+              coverageStatus.statusType === 'error'
+                ? 'text-red-900 dark:text-red-200'
+                : coverageStatus.statusType === 'warning' 
                 ? 'text-yellow-900 dark:text-yellow-200' 
-                : isDayLocked
+                : coverageStatus.statusType === 'info'
                 ? 'text-slate-900 dark:text-slate-200'
                 : 'text-green-900 dark:text-green-200'
             }`}>
-              {coverageStatus.showWarning ? 'Needs Attention' : isDayLocked ? 'Locked' : 'Fully Covered'}
+              {coverageStatus.status}
             </p>
           </div>
         </div>
@@ -789,7 +894,7 @@ export default function ShiftScheduler() {
             <div className="flex items-center space-x-2 text-blue-700 dark:text-blue-300">
               <AlertCircle className="w-5 h-5" />
               <p className="text-sm font-medium">
-                Viewing historical schedule for {weekDates[selectedDay].toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
+                This schedule is now locked - viewing {weekDates[selectedDay].toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
               </p>
             </div>
           </div>
@@ -1176,17 +1281,35 @@ export default function ShiftScheduler() {
                       tick={{ fontSize: 11 }}
                     />
                     <Tooltip 
-                      contentStyle={{
-                        backgroundColor: isDark ? '#1e293b' : '#ffffff',
-                        border: `1px solid ${isDark ? '#334155' : '#e2e8f0'}`,
-                        borderRadius: '8px',
-                        color: isDark ? '#f1f5f9' : '#0f172a'
-                      }}
-                      formatter={(value: any, name: string) => {
-                        if (name === 'gap') return [value, 'Need to Add'];
-                        if (name === 'excess') return [value, 'Can Reduce'];
-                        if (name === 'optimal') return [value, 'Optimal'];
-                        return [value, name];
+                      cursor={{ fill: isDark ? '#334155' : '#cbd5e1', opacity: 0.3 }}
+                      content={({ active, payload }: any) => {
+                        if (active && payload && payload.length) {
+                          const data = payload[0].payload;
+                          return (
+                            <div className="bg-white dark:bg-slate-800 p-3 rounded-lg shadow-lg border border-slate-200 dark:border-slate-700">
+                              <p className="text-sm font-medium text-slate-900 dark:text-white mb-2">{data.time}</p>
+                              <div className="space-y-1">
+                                <p className="text-sm text-slate-600 dark:text-slate-400">
+                                  Required: <span className="font-bold">{data.required}</span>
+                                </p>
+                                <p className="text-sm text-slate-600 dark:text-slate-400">
+                                  Scheduled: <span className="font-bold">{data.scheduled}</span>
+                                </p>
+                                {data.gap > 0 && (
+                                  <p className="text-sm text-red-600 dark:text-red-400">
+                                    Need to Add: <span className="font-bold">{data.gap}</span>
+                                  </p>
+                                )}
+                                {data.excess > 0 && (
+                                  <p className="text-sm text-blue-600 dark:text-blue-400">
+                                    Can Reduce: <span className="font-bold">{data.excess}</span>
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        }
+                        return null;
                       }}
                     />
                     <Legend 
@@ -1197,9 +1320,9 @@ export default function ShiftScheduler() {
                         return value;
                       }}
                     />
-                    <Bar dataKey="optimal" stackId="a" fill="#10b981" name="optimal" radius={[0, 0, 0, 0]} />
-                    <Bar dataKey="gap" stackId="a" fill="#ef4444" name="gap" radius={[4, 4, 0, 0]} />
-                    <Bar dataKey="excess" stackId="a" fill="#3b82f6" name="excess" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="optimal" stackId="a" fill="#10b981" name="optimal" radius={[0, 0, 0, 0]} opacity={0.6} />
+                    <Bar dataKey="gap" stackId="a" fill="#ef4444" name="gap" radius={[4, 4, 0, 0]} opacity={0.6} />
+                    <Bar dataKey="excess" stackId="a" fill="#3b82f6" name="excess" radius={[4, 4, 0, 0]} opacity={0.6} />
                   </BarChart>
                 </ResponsiveContainer>
                 ) : (
@@ -1351,8 +1474,16 @@ export default function ShiftScheduler() {
             <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl max-w-md w-full border border-slate-200 dark:border-slate-700 animate-in fade-in zoom-in duration-200">
               <div className="p-6">
                 <div className="flex items-center space-x-3 mb-4">
-                  <div className="w-12 h-12 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-                    <CheckCircle className="w-6 h-6 text-green-600 dark:text-green-400" />
+                  <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
+                    coverageStatus.understaffed > coverageStatus.adequate
+                      ? 'bg-yellow-100 dark:bg-yellow-900/30'
+                      : 'bg-green-100 dark:bg-green-900/30'
+                  }`}>
+                    {coverageStatus.understaffed > coverageStatus.adequate ? (
+                      <AlertCircle className="w-6 h-6 text-yellow-600 dark:text-yellow-400" />
+                    ) : (
+                      <CheckCircle className="w-6 h-6 text-green-600 dark:text-green-400" />
+                    )}
                   </div>
                   <div>
                     <h3 className="text-lg font-bold text-slate-900 dark:text-white">Complete Schedule?</h3>
@@ -1362,8 +1493,20 @@ export default function ShiftScheduler() {
                   </div>
                 </div>
                 
+                {coverageStatus.understaffed > coverageStatus.adequate && (
+                  <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg p-3 mb-4">
+                    <p className="text-sm text-yellow-900 dark:text-yellow-200">
+                      <span className="font-bold">Warning:</span> This schedule is currently understaffed with {coverageStatus.understaffed} time slot{coverageStatus.understaffed !== 1 ? 's' : ''} needing more agents.
+                    </p>
+                  </div>
+                )}
+                
                 <p className="text-sm text-slate-600 dark:text-slate-300 mb-6">
-                  Once completed, this day's schedule will be locked and cannot be edited. Are you sure you want to continue?
+                  {coverageStatus.understaffed > coverageStatus.adequate ? (
+                    <>Are you sure you want to lock this schedule even though it is understaffed? Once completed, this day's schedule cannot be edited.</>
+                  ) : (
+                    <>Once completed, this day's schedule will be locked and cannot be edited. Are you sure you want to continue?</>
+                  )}
                 </p>
                 
                 <div className="flex items-center space-x-3">
@@ -1375,7 +1518,11 @@ export default function ShiftScheduler() {
                   </button>
                   <button
                     onClick={handleCompleteDay}
-                    className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
+                    className={`flex-1 px-4 py-2 text-white rounded-lg transition-colors text-sm font-medium ${
+                      coverageStatus.understaffed > coverageStatus.adequate
+                        ? 'bg-yellow-600 hover:bg-yellow-700'
+                        : 'bg-green-600 hover:bg-green-700'
+                    }`}
                   >
                     Complete Schedule
                   </button>

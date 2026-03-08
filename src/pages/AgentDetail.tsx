@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { ArrowLeft, Phone, Clock, TrendingUp, TrendingDown, Calendar, Target, Award, Activity } from 'lucide-react';
 import { Link, useParams, useLocation, useNavigate } from 'react-router';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, ReferenceLine } from 'recharts';
@@ -19,6 +19,11 @@ export default function AgentDetail() {
   const isDark = theme === 'dark';
   const location = useLocation();
   const navigate = useNavigate();
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   // Decode agent name from URL
   const decodedAgentName = agentName ? decodeURIComponent(agentName) : '';
@@ -321,28 +326,36 @@ export default function AgentDetail() {
                 </span>
               </div>
             </div>
-            <ResponsiveContainer width="100%" height={250} minWidth={300} minHeight={250}>
-              <LineChart data={performanceTrend}>
-                <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#334155' : '#e2e8f0'} />
-                <XAxis dataKey="date" stroke={isDark ? '#94a3b8' : '#64748b'} style={{ fontSize: '12px' }} />
-                <YAxis stroke={isDark ? '#94a3b8' : '#64748b'} style={{ fontSize: '12px' }} />
-                <Tooltip 
-                  contentStyle={{
-                    backgroundColor: isDark ? '#1e293b' : '#ffffff',
-                    border: `1px solid ${isDark ? '#334155' : '#e2e8f0'}`,
-                    borderRadius: '8px',
-                    fontSize: '12px'
-                  }}
-                />
-                <ReferenceLine 
-                  y={performanceTrend.reduce((sum, d) => sum + d.calls, 0) / performanceTrend.length} 
-                  stroke={isDark ? '#60a5fa' : '#3b82f6'} 
-                  strokeDasharray="5 5" 
-                  label={{ value: 'Avg', position: 'right', fill: isDark ? '#60a5fa' : '#3b82f6', fontSize: 12 }}
-                />
-                <Line type="monotone" dataKey="calls" stroke="#3b82f6" strokeWidth={2} dot={{ fill: '#3b82f6', r: 4 }} />
-              </LineChart>
-            </ResponsiveContainer>
+            <div style={{ width: '100%', height: '250px', minHeight: '250px', minWidth: '300px' }}>
+              {isMounted ? (
+                <ResponsiveContainer width="100%" height="100%" minWidth={300} minHeight={250}>
+                  <LineChart data={performanceTrend}>
+                    <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#334155' : '#e2e8f0'} />
+                    <XAxis dataKey="date" stroke={isDark ? '#94a3b8' : '#64748b'} style={{ fontSize: '12px' }} />
+                    <YAxis stroke={isDark ? '#94a3b8' : '#64748b'} style={{ fontSize: '12px' }} />
+                    <Tooltip 
+                      contentStyle={{
+                        backgroundColor: isDark ? '#1e293b' : '#ffffff',
+                        border: `1px solid ${isDark ? '#334155' : '#e2e8f0'}`,
+                        borderRadius: '8px',
+                        fontSize: '12px'
+                      }}
+                    />
+                    <ReferenceLine 
+                      y={performanceTrend.reduce((sum, d) => sum + d.calls, 0) / performanceTrend.length} 
+                      stroke={isDark ? '#60a5fa' : '#3b82f6'} 
+                      strokeDasharray="5 5" 
+                      label={{ value: 'Avg', position: 'right', fill: isDark ? '#60a5fa' : '#3b82f6', fontSize: 12 }}
+                    />
+                    <Line type="monotone" dataKey="calls" stroke="#3b82f6" strokeWidth={2} dot={{ fill: '#3b82f6', r: 4 }} />
+                  </LineChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex items-center justify-center h-full text-slate-400">
+                  Loading chart...
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Utilization Trend */}
@@ -355,29 +368,37 @@ export default function AgentDetail() {
                 </span>
               </div>
             </div>
-            <ResponsiveContainer width="100%" height={250} minWidth={300} minHeight={250}>
-              <BarChart data={performanceTrend}>
-                <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#334155' : '#e2e8f0'} />
-                <XAxis dataKey="date" stroke={isDark ? '#94a3b8' : '#64748b'} style={{ fontSize: '12px' }} />
-                <YAxis stroke={isDark ? '#94a3b8' : '#64748b'} style={{ fontSize: '12px' }} />
-                <Tooltip 
-                  contentStyle={{
-                    backgroundColor: isDark ? '#1e293b' : '#ffffff',
-                    border: `1px solid ${isDark ? '#334155' : '#e2e8f0'}`,
-                    borderRadius: '8px',
-                    fontSize: '12px'
-                  }}
-                  formatter={(value: number) => `${value}%`}
-                />
-                <ReferenceLine 
-                  y={performanceTrend.reduce((sum, d) => sum + d.utilization, 0) / performanceTrend.length} 
-                  stroke={isDark ? '#34d399' : '#10b981'} 
-                  strokeDasharray="5 5" 
-                  label={{ value: 'Avg', position: 'right', fill: isDark ? '#34d399' : '#10b981', fontSize: 12 }}
-                />
-                <Bar dataKey="utilization" fill="#10b981" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+            <div style={{ width: '100%', height: '250px', minHeight: '250px', minWidth: '300px' }}>
+              {isMounted ? (
+                <ResponsiveContainer width="100%" height="100%" minWidth={300} minHeight={250}>
+                  <BarChart data={performanceTrend}>
+                    <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#334155' : '#e2e8f0'} />
+                    <XAxis dataKey="date" stroke={isDark ? '#94a3b8' : '#64748b'} style={{ fontSize: '12px' }} />
+                    <YAxis stroke={isDark ? '#94a3b8' : '#64748b'} style={{ fontSize: '12px' }} />
+                    <Tooltip 
+                      contentStyle={{
+                        backgroundColor: isDark ? '#1e293b' : '#ffffff',
+                        border: `1px solid ${isDark ? '#334155' : '#e2e8f0'}`,
+                        borderRadius: '8px',
+                        fontSize: '12px'
+                      }}
+                      formatter={(value: number) => `${value}%`}
+                    />
+                    <ReferenceLine 
+                      y={performanceTrend.reduce((sum, d) => sum + d.utilization, 0) / performanceTrend.length} 
+                      stroke={isDark ? '#34d399' : '#10b981'} 
+                      strokeDasharray="5 5" 
+                      label={{ value: 'Avg', position: 'right', fill: isDark ? '#34d399' : '#10b981', fontSize: 12 }}
+                    />
+                    <Bar dataKey="utilization" fill="#10b981" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex items-center justify-center h-full text-slate-400">
+                  Loading chart...
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
